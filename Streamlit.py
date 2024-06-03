@@ -26,26 +26,31 @@ with st.sidebar:
 if selected == 'Common diseases Prediction':
     st.title('Common Disease Prediction using ML')
     
-    # Create input fields for symptoms dynamically
-    symptoms_inputs = []
-    for symptom in symptoms_list:
-        symptom_input = st.checkbox(symptom)
-        symptoms_inputs.append(symptom_input)
+    # Create multi-select dropdowns for symptoms with a limit of 2 keys per multi-select
+    selected_symptoms = []
+    for i in range(5):
+        selected = st.multiselect(f'Select symptoms {i+1} (Max 2)', symptoms_list, key=f'symptoms_{i}')
+        if len(selected) > 2:
+            st.error(f"Please select only up to 2 symptoms for 'Select symptoms {i+1}'. You selected {len(selected)}.")
+        selected_symptoms.extend(selected)
 
     common_diagnostics = ''
 
     if st.button('Common Disease Prediction'):
-        # Create the input vector for the model
-        ipt = [1 if symptom_checked else 0 for symptom_checked in symptoms_inputs]
-        ipt = np.array([ipt])
-        
-        # Make predictions
-        pred = common_model.predict(ipt)[0]
-        prob = common_model.predict_proba(ipt)
-        
-        if any(ipt[0]):
-            common_diagnostics = f"Person is predicted to have: {pred}"
+        if any(len(st.session_state[f'symptoms_{i}']) > 2 for i in range(5)):
+            st.error("Please ensure no more than 2 symptoms are selected in each dropdown.")
         else:
-            common_diagnostics = "Persons diseases cannot be classified by the model, please provide appropriate symptoms."
+            # Create the input vector for the model
+            ipt = [1 if symptom in selected_symptoms else 0 for symptom in symptoms_list]
+            ipt = np.array([ipt])
+            
+            # Make predictions
+            pred = common_model.predict(ipt)[0]
+            prob = common_model.predict_proba(ipt)
+            
+            if any(ipt[0]):
+                common_diagnostics = f"Person is predicted to have: {pred}"
+            else:
+                common_diagnostics = "Persons diseases cannot be classified by the model, please provide appropriate symptoms."
 
     st.success(common_diagnostics)
